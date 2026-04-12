@@ -1,17 +1,45 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Mail, ArrowRight, Loader2 } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+
+const COOLDOWN_SECONDS = 60
+
+function translateError(message: string): string {
+  if (message.includes('rate limit') || message.includes('too many') || message.includes('over_email_send_rate_limit')) {
+    return 'Trop de tentatives. Veuillez patienter avant de réessayer.'
+  }
+  if (message.includes('invalid') || message.includes('Invalid')) {
+    return 'Adresse email invalide.'
+  }
+  return 'Une erreur est survenue. Veuillez réessayer.'
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const [cooldown, setCooldown] = useState(0)
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'auth_failed') {
+      setError('Le lien de connexion est invalide ou a expiré. Veuillez en demander un nouveau.')
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setTimeout(() => setCooldown(c => c - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [cooldown])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (cooldown > 0) return
     setLoading(true)
     setError('')
 
@@ -24,12 +52,17 @@ export default function LoginPage() {
     })
 
     if (error) {
-      setError(error.message)
+      setError(translateError(error.message))
       setLoading(false)
+      // Démarrer un cooldown même en cas d'erreur de rate limit
+      if (error.message.includes('rate limit') || error.message.includes('too many') || error.message.includes('over_email_send_rate_limit')) {
+        setCooldown(COOLDOWN_SECONDS)
+      }
       return
     }
 
     setSent(true)
+    setCooldown(COOLDOWN_SECONDS)
     setLoading(false)
   }
 
@@ -42,16 +75,26 @@ export default function LoginPage() {
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
           Vérifiez votre email
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
           Un lien de connexion a été envoyé à{' '}
           <span className="font-medium text-slate-700 dark:text-slate-300">{email}</span>
         </p>
-        <button
-          onClick={() => setSent(false)}
-          className="mt-6 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
-        >
-          Utiliser une autre adresse
-        </button>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mb-6">
+          Cliquez sur le lien dans l&apos;email pour vous connecter automatiquement.
+        </p>
+
+        {cooldown > 0 ? (
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Renvoyer dans {cooldown}s
+          </p>
+        ) : (
+          <button
+            onClick={() => { setSent(false); setCooldown(0) }}
+            className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+          >
+            Renvoyer ou utiliser une autre adresse
+          </button>
+        )}
       </div>
     )
   }
@@ -60,7 +103,7 @@ export default function LoginPage() {
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Connexion</h2>
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-        Entrez votre email pour recevoir un lien de connexion.
+        Entrez votre email pour recevoir un lien de connexion. Le compte sera créé automatiquement s&apos;il n&apos;existe pas encore.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,11 +128,13 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          disabled={loading || !email}
+          disabled={loading || !email || cooldown > 0}
           className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 px-4 rounded-xl font-medium text-sm hover:bg-slate-700 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
+          ) : cooldown > 0 ? (
+            `Patienter ${cooldown}s`
           ) : (
             <>
               Envoyer le lien
