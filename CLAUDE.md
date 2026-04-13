@@ -1,13 +1,13 @@
 # ZenGarantie — Guide de développement
 
-## État du projet (mis à jour le 2026-04-12)
+## État du projet (mis à jour le 2026-04-13)
 
 ### ✅ Complété — Application 100% opérationnelle
 - Tout le code source écrit (39 fichiers, 1782 lignes)
 - `npm install` fait — `node_modules/` présent
 - Node.js installé et dans le PATH système
 - Repo GitHub : **https://github.com/davidb-wq/warranty-keep**
-- Déploiement Vercel : **https://warranty-keep.vercel.app**
+- Déploiement Vercel : **https://zen-garantie.vercel.app**
 - Supabase configuré : table `warranties`, RLS, Storage bucket `warranty-images`, Magic Link activé
 - Variables d'environnement configurées sur Vercel (6 variables)
 - URLs de redirection Supabase configurées pour Vercel
@@ -17,6 +17,8 @@
 - **Auth corrigée** — callback gère `code` (PKCE) et `token_hash` (confirmation signup)
 - **Rate limit** — countdown 60s sur le bouton d'envoi, erreurs traduites en français
 - **Templates email Supabase** personnalisés en français (Magic Link + Confirm signup)
+- **Rappel par email** — 5 options disponibles (voir détail ci-dessous)
+- **Cron corrigé** — logique roulante ancrée sur `purchase_date`, scan de toutes les garanties actives
 
 ### ⚠️ Limitation connue — Resend sans domaine custom
 Resend en mode gratuit sans domaine vérifié ne peut envoyer **qu'à l'email du compte Resend** (`davidblouin03@gmail.com`).
@@ -123,7 +125,7 @@ warranty-keep/
 
 | Service | URL / Identifiant |
 |---|---|
-| App en production | https://warranty-keep.vercel.app |
+| App en production | https://zen-garantie.vercel.app |
 | Repo GitHub | https://github.com/davidb-wq/warranty-keep |
 | Supabase projet | https://djsntrzximssohhluwti.supabase.co |
 | Resend compte | davidblouin03@gmail.com |
@@ -168,7 +170,9 @@ create table public.warranties (
   physical_location text not null default '',
   notes             text,
   image_url         text,
-  reminder_interval int not null default 3 check (reminder_interval in (3, 6)),
+  reminder_interval int not null check (reminder_interval in (1, 3, 12, -3, -6)),
+  -- Positif = roulant (tous les N mois depuis purchase_date)
+  -- Négatif = ponctuel (une fois à N mois avant expiration)
   created_at        timestamptz not null default now()
 );
 
@@ -209,7 +213,14 @@ create policy "Users can delete their own images"
 3. **Path Storage** = `{user_id}/{warranty_id}.webp` — requis pour les policies RLS
 4. **`SUPABASE_SERVICE_ROLE_KEY`** — jamais exposé côté client, seulement dans le cron
 5. **Cron Vercel Hobby** — max 1x/jour → `0 9 1 * *` (1er du mois) est valide
-6. **`reminder_interval`** — stocké par garantie (pas globalement), défaut = 3 mois
+6. **`reminder_interval`** — stocké par garantie (pas globalement), 5 valeurs acceptées :
+   - `1` — Chaque mois (roulant depuis la date d'achat)
+   - `3` — Chaque 3 mois (roulant depuis la date d'achat)
+   - `12` — Chaque année (roulant depuis la date d'achat)
+   - `-3` — 3 mois avant l'expiration (ponctuel, une seule fois)
+   - `-6` — 6 mois avant l'expiration (ponctuel, une seule fois)
+   - Valeurs négatives = rappels ponctuels avant expiration; positives = rappels roulants ancrés sur `purchase_date`
+   - Champ obligatoire, pas de défaut
 7. **Auth callback** — gère deux flux : `?code=` (PKCE) et `?token_hash=&type=` (confirm signup)
 8. **Templates email Supabase** — configurés dans le dashboard Supabase (Auth > Email Templates), sources sauvegardées dans `supabase/email-templates/`
 
@@ -228,7 +239,7 @@ create policy "Users can delete their own images"
 node -e "
 const https = require('https');
 const options = {
-  hostname: 'warranty-keep.vercel.app',
+  hostname: 'zen-garantie.vercel.app',
   path: '/api/cron',
   method: 'GET',
   headers: { 'Authorization': 'Bearer warranty-keep-cron-secret-2026' }
