@@ -15,7 +15,10 @@ export async function createClient() {
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, {
+                ...options,
+                maxAge: 60 * 60 * 24 * 365, // 1 an
+              })
             )
           } catch {
             // Server Component — cookies can't be set (read-only context)
