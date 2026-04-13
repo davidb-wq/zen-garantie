@@ -41,7 +41,7 @@ export function WarrantyReminderEmail({
             }}
           >
             <Text style={{ color: '#ffffff', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>
-              WarrantyKeep
+              ZenGarantie
             </Text>
             <Text style={{ color: '#94a3b8', fontSize: '13px', margin: '4px 0 0' }}>
               Rappel de garanties
@@ -106,7 +106,7 @@ export function WarrantyReminderEmail({
             </Button>
 
             <Text style={{ color: '#94a3b8', fontSize: '12px', marginTop: '24px', marginBottom: 0 }}>
-              Vous recevez cet email car votre compte WarrantyKeep ({email}) a des garanties qui expirent prochainement.
+              Vous recevez cet email car votre compte ZenGarantie ({email}) a des garanties qui expirent prochainement.
             </Text>
           </Section>
         </Container>

@@ -90,7 +90,7 @@ export async function GET(request: Request) {
     }))
 
     const { error: emailError } = await resend.emails.send({
-      from: 'WarrantyKeep <onboarding@resend.dev>',
+      from: 'ZenGarantie <onboarding@resend.dev>',
       to: userEmail,
       subject:
         relevant.length === 1

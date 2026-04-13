@@ -3,12 +3,12 @@ import './globals.css'
 import { SWRegister } from '@/app/components/providers/sw-register'
 
 export const metadata: Metadata = {
-  title: 'WarrantyKeep',
+  title: 'ZenGarantie',
   description: 'Stockez vos factures de garantie et ne les perdez plus jamais',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'WarrantyKeep',
+    title: 'ZenGarantie',
   },
   formatDetection: { telephone: false },
   icons: {

@@ -74,7 +74,7 @@ export default async function SettingsPage() {
               <Info className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-                  WarrantyKeep
+                  ZenGarantie
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Version 1.0.0 — Vos garanties, toujours à portée de main.

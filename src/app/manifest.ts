@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'WarrantyKeep',
-    short_name: 'WarrantyKeep',
+    name: 'ZenGarantie',
+    short_name: 'ZenGarantie',
     description: 'Stockez vos factures de garantie et ne les perdez plus jamais',
     start_url: '/warranties',
     display: 'standalone',
