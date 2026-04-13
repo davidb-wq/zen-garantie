@@ -26,8 +26,8 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
     String(defaultValues?.warranty_months ?? 12)
   )
   const [physicalLocation, setPhysicalLocation] = useState(defaultValues?.physical_location ?? '')
-  const [reminderInterval, setReminderInterval] = useState<'3' | '6'>(
-    String(defaultValues?.reminder_interval ?? 3) as '3' | '6'
+  const [reminderInterval, setReminderInterval] = useState<'1' | '3' | '12' | ''>(
+    defaultValues?.reminder_interval ? String(defaultValues.reminder_interval) as '1' | '3' | '12' : ''
   )
   const [notes, setNotes] = useState(defaultValues?.notes ?? '')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -43,6 +43,14 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
 
     const supabase = createClient()
 
+    // Get current user first
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      setError('Session expirée, veuillez vous reconnecter.')
+      setLoading(false)
+      return
+    }
+
     const payload: WarrantyInsert = {
       title: title.trim(),
       purchase_date: purchaseDate,
@@ -50,12 +58,12 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
       physical_location: physicalLocation.trim(),
       notes: notes.trim() || null,
       image_url: defaultValues?.image_url ?? null,
-      reminder_interval: parseInt(reminderInterval) as 3 | 6,
+      reminder_interval: parseInt(reminderInterval) as 1 | 3 | 12,
     }
 
     try {
       let currentId = warrantyId
-      let currentUserId = userId
+      let currentUserId = userId ?? user.id
 
       if (isEdit) {
         const { error: updateError } = await supabase
@@ -67,13 +75,13 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
       } else {
         const { data, error: insertError } = await supabase
           .from('warranties')
-          .insert(payload)
+          .insert({ ...payload, user_id: user.id })
           .select()
           .single()
 
         if (insertError) throw insertError
         currentId = data.id
-        currentUserId = data.user_id
+        currentUserId = data.user_id ?? user.id
       }
 
       // Upload image if provided
@@ -169,15 +177,18 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
       {/* Reminder interval */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-          Rappel par email
+          Rappel par email <span className="text-red-500">*</span>
         </label>
         <select
           value={reminderInterval}
-          onChange={(e) => setReminderInterval(e.target.value as '3' | '6')}
+          onChange={(e) => setReminderInterval(e.target.value as '1' | '3' | '12')}
+          required
           className="input"
         >
-          <option value="3">3 mois avant l&apos;expiration</option>
-          <option value="6">6 mois avant l&apos;expiration</option>
+          <option value="" disabled>Choisir une fréquence</option>
+          <option value="1">Chaque mois</option>
+          <option value="3">Chaque 3 mois</option>
+          <option value="12">Chaque année</option>
         </select>
       </div>
 
@@ -215,7 +226,7 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
 
       <button
         type="submit"
-        disabled={loading || !title}
+        disabled={loading || !title || !reminderInterval}
         className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 px-4 rounded-xl font-medium text-sm hover:bg-slate-700 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? (

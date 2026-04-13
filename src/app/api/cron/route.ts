@@ -28,15 +28,15 @@ export async function GET(request: Request) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const sixMonthsFromNow = new Date(today)
-  sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6)
+  const twelveMonthsFromNow = new Date(today)
+  twelveMonthsFromNow.setMonth(twelveMonthsFromNow.getMonth() + 12)
 
-  // Fetch non-lifetime warranties expiring within 6 months
+  // Fetch non-lifetime warranties expiring within 12 months
   const { data: warranties, error } = await supabase
     .from('warranties_with_expiry')
     .select('id, user_id, title, expiry_date, reminder_interval')
     .gte('expiry_date', today.toISOString().split('T')[0])
-    .lte('expiry_date', sixMonthsFromNow.toISOString().split('T')[0])
+    .lte('expiry_date', twelveMonthsFromNow.toISOString().split('T')[0])
 
   if (error) {
     console.error('Cron query error:', error)
