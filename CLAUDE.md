@@ -6,7 +6,7 @@
 - Tout le code source écrit (39 fichiers, 1782 lignes)
 - `npm install` fait — `node_modules/` présent
 - Node.js installé et dans le PATH système
-- Repo GitHub : **https://github.com/davidb-wq/warranty-keep**
+- Repo GitHub : **https://github.com/davidb-wq/zen-garantie**
 - Déploiement Vercel : **https://zen-garantie.vercel.app**
 - Supabase configuré : table `warranties`, RLS, Storage bucket `warranty-images`, Magic Link activé
 - Variables d'environnement configurées sur Vercel (6 variables)
@@ -126,7 +126,7 @@ warranty-keep/
 | Service | URL / Identifiant |
 |---|---|
 | App en production | https://zen-garantie.vercel.app |
-| Repo GitHub | https://github.com/davidb-wq/warranty-keep |
+| Repo GitHub | https://github.com/davidb-wq/zen-garantie |
 | Supabase projet | https://djsntrzximssohhluwti.supabase.co |
 | Resend compte | davidblouin03@gmail.com |
 
