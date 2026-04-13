@@ -60,19 +60,24 @@ export async function GET(request: Request) {
     // Filter: apply reminder logic based on interval type
     const relevant = userWarranties.filter((w) => {
       if (w.reminder_interval > 0) {
-        // Rolling: fire every N months from purchase date
+        // Rolling: fire on the same day-of-month as purchase_date, every N months
         const purchase = new Date(w.purchase_date)
+        if (today.getDate() !== purchase.getDate()) return false
         const monthsSincePurchase =
           (today.getFullYear() - purchase.getFullYear()) * 12 +
           (today.getMonth() - purchase.getMonth())
         return monthsSincePurchase > 0 && monthsSincePurchase % w.reminder_interval === 0
       } else {
-        // Before expiry: fire once when entering the X-month window before expiration
-        const daysLeft = Math.ceil(
-          (new Date(w.expiry_date).getTime() - today.getTime()) / 86400000
-        )
+        // Before expiry: fire on the exact date that is N months before expiry_date
+        const expiry = new Date(w.expiry_date)
         const months = Math.abs(w.reminder_interval)
-        return daysLeft <= months * 30 && daysLeft > (months - 1) * 30
+        const target = new Date(expiry)
+        target.setMonth(target.getMonth() - months)
+        return (
+          today.getFullYear() === target.getFullYear() &&
+          today.getMonth() === target.getMonth() &&
+          today.getDate() === target.getDate()
+        )
       }
     })
 
