@@ -1,6 +1,6 @@
 # ZenGarantie — Guide de développement
 
-## État du projet (mis à jour le 2026-04-13)
+## État du projet (mis à jour le 2026-04-14)
 
 ### ✅ Complété — Application 100% opérationnelle
 - Tout le code source écrit (39 fichiers, 1782 lignes)
@@ -19,6 +19,7 @@
 - **Templates email Supabase** personnalisés en français (Magic Link + Confirm signup)
 - **Rappel par email** — 5 options disponibles (voir détail ci-dessous)
 - **Cron corrigé** — logique roulante ancrée sur `purchase_date`, scan de toutes les garanties actives
+- **Page d'accueil** — landing page publique sur `/` avec présentation de l'app et bouton de connexion
 
 ### ⚠️ Limitation connue — Resend sans domaine custom
 Resend en mode gratuit sans domaine vérifié ne peut envoyer **qu'à l'email du compte Resend** (`davidblouin03@gmail.com`).
@@ -76,7 +77,7 @@ warranty-keep/
 │       └── confirm-signup.html    # Template Supabase — confirmation nouveau compte (FR)
 │
 └── src/
-    ├── middleware.ts              # Refresh token Supabase + redirect si non-auth
+    ├── middleware.ts              # Refresh token Supabase + redirect si non-auth ; redirige `/` et `/login` → `/warranties` si connecté
     ├── lib/
     │   ├── supabase/
     │   │   ├── client.ts          # createBrowserClient
@@ -89,7 +90,7 @@ warranty-keep/
         ├── layout.tsx             # Root layout, metadata PWA, <SWRegister>
         ├── manifest.ts            # PWA manifest (display: standalone)
         ├── globals.css            # Tailwind + classe .input + pb-safe
-        ├── page.tsx               # Redirect → /warranties
+        ├── page.tsx               # Landing page publique (logo, features, CTA connexion)
         ├── not-found.tsx
         ├── (auth)/
         │   ├── layout.tsx         # Layout centré (pas de bottom nav)
