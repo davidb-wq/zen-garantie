@@ -1,6 +1,15 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    redirect('/warranties')
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col">
       <main className="flex-1 flex items-center justify-center px-4 py-16">
