@@ -1,8 +1,27 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { AuthHashHandler } from '@/components/providers/auth-hash-handler'
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string; token_hash?: string; type?: string }>
+}) {
+  // Cas 1 : Supabase redirige vers / avec ?code= ou ?token_hash= (URL callback non autorisée)
+  // On forwarde vers /auth/callback qui gère l'échange de session.
+  const params = await searchParams
+  const { code, token_hash, type } = params
+
+  if (code || (token_hash && type)) {
+    const qs = new URLSearchParams()
+    if (code)       qs.set('code', code)
+    if (token_hash) qs.set('token_hash', token_hash)
+    if (type)       qs.set('type', type)
+    redirect(`/auth/callback?${qs.toString()}`)
+  }
+
+  // Cas 2 : Utilisateur déjà connecté (cookie de session présent)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -12,6 +31,8 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col">
+      {/* Cas 3 : Supabase redirige vers / avec #access_token= dans le hash (détecté côté client) */}
+      <AuthHashHandler />
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
 
