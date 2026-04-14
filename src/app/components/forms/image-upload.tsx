@@ -17,6 +17,7 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
 
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -73,9 +74,18 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
 
   return (
     <div>
-      {/* Un seul input sans capture — Android/iOS affichent leur propre menu natif */}
+      {/* Bouton caméra : capture="environment" ouvre directement l'appareil photo */}
       <input
         ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      {/* Bouton galerie : sans capture, ouvre les fichiers/photos */}
+      <input
+        ref={galleryRef}
         type="file"
         accept="image/*"
         onChange={handleFileChange}
@@ -87,18 +97,24 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
           <span className="text-sm">Compression en cours…</span>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => cameraRef.current?.click()}
-          className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-        >
-          <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 py-5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
             <Camera className="w-5 h-5" />
+            <span className="text-xs font-medium">Prendre une photo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => galleryRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 py-5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
             <ImageIcon className="w-5 h-5" />
-          </div>
-          <span className="text-sm font-medium">Prendre une photo ou choisir un fichier</span>
-          <span className="text-xs text-slate-400">Compressée automatiquement (&lt; 500 Ko)</span>
-        </button>
+            <span className="text-xs font-medium">Choisir un fichier</span>
+          </button>
+        </div>
       )}
       {compressionError && (
         <p className="mt-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
