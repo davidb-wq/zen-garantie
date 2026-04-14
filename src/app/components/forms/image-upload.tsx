@@ -14,7 +14,8 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
   const [compressing, setCompressing] = useState(false)
   const [preview, setPreview] = useState<string | null>(existingUrl ?? null)
   const [compressionError, setCompressionError] = useState<string | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -24,7 +25,7 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
 
     if (file.size > 20 * 1024 * 1024) {
       setCompressionError('Image trop volumineuse (max 20 Mo). Choisissez une photo plus petite.')
-      if (inputRef.current) inputRef.current.value = ''
+      e.target.value = ''
       return
     }
 
@@ -37,7 +38,7 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
     } catch {
       setCompressionError('Impossible de compresser cette image. Essayez une photo plus petite.')
       onChange(null)
-      if (inputRef.current) inputRef.current.value = ''
+      e.target.value = ''
     } finally {
       setCompressing(false)
     }
@@ -47,7 +48,8 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
     setPreview(null)
     onChange(null)
     setCompressionError(null)
-    if (inputRef.current) inputRef.current.value = ''
+    if (cameraRef.current) cameraRef.current.value = ''
+    if (galleryRef.current) galleryRef.current.value = ''
   }
 
   if (preview) {
@@ -71,35 +73,48 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
 
   return (
     <div>
+      {/* Input caméra */}
       <input
-        ref={inputRef}
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      {/* Input galerie/fichiers */}
+      <input
+        ref={galleryRef}
         type="file"
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
       />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={compressing}
-        className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-      >
-        {compressing ? (
-          <>
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <span className="text-sm">Compression en cours…</span>
-          </>
-        ) : (
-          <>
-            <div className="flex gap-2">
-              <Camera className="w-5 h-5" />
-              <ImageIcon className="w-5 h-5" />
-            </div>
-            <span className="text-sm font-medium">Prendre une photo ou choisir un fichier</span>
-            <span className="text-xs text-slate-400">Compressée automatiquement (&lt; 500 Ko)</span>
-          </>
-        )}
-      </button>
+      {compressing ? (
+        <div className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span className="text-sm">Compression en cours…</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 py-5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
+            <Camera className="w-5 h-5" />
+            <span className="text-xs font-medium">Prendre une photo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => galleryRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 py-5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+          >
+            <ImageIcon className="w-5 h-5" />
+            <span className="text-xs font-medium">Choisir un fichier</span>
+          </button>
+        </div>
+      )}
       {compressionError && (
         <p className="mt-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
           {compressionError}
