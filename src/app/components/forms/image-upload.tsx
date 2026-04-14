@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Camera, X, Loader2, ImageIcon } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Camera, X, Loader2, ImageIcon, AlertTriangle } from 'lucide-react'
 import { compressWarrantyImage } from '@/lib/image-compression'
 
 interface ImageUploadProps {
@@ -16,7 +16,17 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
   const [compressionError, setCompressionError] = useState<string | null>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useEffect(() => {
+    if (compressionError) {
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      errorTimerRef.current = setTimeout(() => setCompressionError(null), 30000)
+    }
+    return () => {
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    }
+  }, [compressionError])
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -25,7 +35,7 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
     setCompressionError(null)
 
     if (file.size > 20 * 1024 * 1024) {
-      setCompressionError('Image trop volumineuse (max 20 Mo). Choisissez une photo plus petite.')
+      setCompressionError('IMAGE_TOO_LARGE')
       e.target.value = ''
       return
     }
@@ -37,7 +47,7 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
       setPreview(objectUrl)
       onChange(compressed)
     } catch {
-      setCompressionError('Impossible de compresser cette image. Essayez une photo plus petite.')
+      setCompressionError('MEMORY_ERROR')
       onChange(null)
       e.target.value = ''
     } finally {
@@ -49,6 +59,7 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
     setPreview(null)
     onChange(null)
     setCompressionError(null)
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
     if (cameraRef.current) cameraRef.current.value = ''
     if (galleryRef.current) galleryRef.current.value = ''
   }
@@ -117,9 +128,24 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
         </div>
       )}
       {compressionError && (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
-          {compressionError}
-        </p>
+        <div className="mt-2 flex gap-2 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 px-3 py-3 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800 dark:text-amber-200">
+            {compressionError === 'MEMORY_ERROR' ? (
+              <>
+                <p className="font-medium mb-1">Impossible de traiter l&apos;image — manque de mémoire.</p>
+                <p>Pour régler le problème :</p>
+                <ul className="list-disc list-inside mt-1 space-y-0.5">
+                  <li>Fermez quelques applications ouvertes en arrière-plan</li>
+                  <li>Redémarrez votre navigateur et réessayez</li>
+                  <li>Ou utilisez <strong>« Choisir un fichier »</strong> pour sélectionner une photo depuis votre galerie</li>
+                </ul>
+              </>
+            ) : (
+              <p>Image trop volumineuse (max 20 Mo). Choisissez une photo plus petite.</p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

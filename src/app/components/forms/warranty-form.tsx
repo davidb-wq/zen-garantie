@@ -215,7 +215,7 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
       {/* Image */}
       <div>
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-          Photo de la facture <span className="text-slate-400 text-xs font-normal">(optionnel)</span>
+          Photo de la facture <span className="text-red-500">*</span>
         </label>
         <ImageUpload
           value={imageFile}
@@ -232,7 +232,7 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
 
       <button
         type="submit"
-        disabled={loading || !title || !reminderInterval}
+        disabled={loading || !title || !reminderInterval || !imageFile}
         className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 px-4 rounded-xl font-medium text-sm hover:bg-slate-700 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? (
