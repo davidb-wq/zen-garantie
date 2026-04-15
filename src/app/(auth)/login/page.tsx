@@ -111,7 +111,7 @@ function LoginForm() {
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault()
-    if (otp.length !== 6) return
+    if (otp.length !== 8) return
     setVerifying(true)
     setOtpError('')
 
@@ -143,7 +143,7 @@ function LoginForm() {
             Entrez votre code
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Un code à 6 chiffres a été envoyé à{' '}
+            Un code à 8 chiffres a été envoyé à{' '}
             <span className="font-medium text-slate-700 dark:text-slate-300">{email}</span>
           </p>
           <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
@@ -162,10 +162,10 @@ function LoginForm() {
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              maxLength={6}
+              maxLength={8}
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="123456"
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              placeholder="12345678"
               required
               className="w-full px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white focus:border-transparent text-2xl font-mono tracking-[0.4em] text-center"
             />
@@ -177,7 +177,7 @@ function LoginForm() {
 
           <button
             type="submit"
-            disabled={verifying || otp.length !== 6}
+            disabled={verifying || otp.length !== 8}
             className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 px-4 rounded-xl font-medium text-sm hover:bg-slate-700 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {verifying ? (
