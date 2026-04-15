@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Mail, ArrowRight, Loader2 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
-const COOLDOWN_SECONDS = 600
+const COOLDOWN_SECONDS = 60
 
 function formatCooldown(seconds: number): string {
   if (seconds >= 3600) {
