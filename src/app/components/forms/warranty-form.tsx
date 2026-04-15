@@ -232,7 +232,7 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
 
       <button
         type="submit"
-        disabled={loading || !title || !reminderInterval || !imageFile}
+        disabled={loading || !title || !reminderInterval || (!imageFile && !defaultValues?.image_url)}
         className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 px-4 rounded-xl font-medium text-sm hover:bg-slate-700 dark:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? (
