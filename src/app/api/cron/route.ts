@@ -1,8 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { Resend } from 'resend'
+import { render } from '@react-email/render'
 import { WarrantyReminderEmail } from '@/../emails/warranty-reminder'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 interface WarrantyWithExpiry {
   id: string
@@ -102,21 +100,31 @@ export async function GET(request: Request) {
       ),
     }))
 
-    const { error: emailError } = await resend.emails.send({
-      from: 'ZenGarantie <onboarding@resend.dev>',
-      to: userEmail,
-      subject:
-        relevant.length === 1
-          ? `Rappel : "${relevant[0].title}" expire bientôt`
-          : `Rappel : ${relevant.length} garanties expirent bientôt`,
-      react: WarrantyReminderEmail({
-        email: userEmail,
-        warranties: warrantyItems,
-        appUrl,
+    const html = await render(WarrantyReminderEmail({
+      email: userEmail,
+      warranties: warrantyItems,
+      appUrl,
+    }))
+
+    const subject = relevant.length === 1
+      ? `Rappel : "${relevant[0].title}" expire bientôt`
+      : `Rappel : ${relevant.length} garanties expirent bientôt`
+
+    const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY!,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: 'ZenGarantie', email: 'davidblouin03@gmail.com' },
+        to: [{ email: userEmail }],
+        subject,
+        htmlContent: html,
       }),
     })
 
-    if (!emailError) sent++
+    if (brevoRes.ok) sent++
   }
 
   return Response.json({ sent, total: warranties.length })
