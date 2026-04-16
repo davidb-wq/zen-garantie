@@ -34,6 +34,11 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body>
+        {/* Capture beforeinstallprompt avant hydration React pour éviter les problèmes de timing */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.__pwaInstallPrompt=null;
+          window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;});
+        `}} />
         {children}
         <SWRegister />
       </body>

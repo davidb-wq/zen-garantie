@@ -36,6 +36,13 @@ export function usePwaInstall() {
     setIsIOS(iosDevice && safariOnly)
 
     // Détection Android/Chrome via beforeinstallprompt
+    // Vérifie d'abord si l'événement a déjà été capturé avant l'hydration React
+    const globalPrompt = (window as Window & { __pwaInstallPrompt?: BeforeInstallPromptEvent | null }).__pwaInstallPrompt
+    if (globalPrompt) {
+      deferredPromptRef.current = globalPrompt
+      setCanInstallAndroid(true)
+    }
+
     const handler = (e: Event) => {
       e.preventDefault()
       deferredPromptRef.current = e as BeforeInstallPromptEvent
