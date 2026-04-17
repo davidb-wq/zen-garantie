@@ -1,49 +1,44 @@
 # ZenGarantie — Guide de développement
 
-## État du projet (mis à jour le 2026-04-15 — auth OTP)
+## État du projet (mis à jour le 2026-04-17 — Rappels email corrigés)
 
 ### ✅ Complété — Application 100% opérationnelle
-- Tout le code source écrit (39 fichiers, 1782 lignes)
+- Tout le code source écrit
 - `npm install` fait — `node_modules/` présent
 - Node.js installé et dans le PATH système
 - Repo GitHub : **https://github.com/davidb-wq/zen-garantie**
 - Déploiement Vercel : **https://zen-garantie.vercel.app**
 - Supabase configuré : table `warranties`, RLS, Storage bucket `warranty-images`, OTP activé
-- Variables d'environnement configurées sur Vercel (6 variables)
-- Resend configuré — emails envoyés depuis `onboarding@resend.dev`
-- Cron mensuel testé et fonctionnel (1er du mois à 9h UTC)
-- Email de test envoyé avec succès à `davidblouin03@gmail.com`
+- Variables d'environnement configurées sur Vercel (8 variables — `BREVO_API_KEY` ajouté, `CRON_SECRET` renforcé)
+- Cron quotidien testé et fonctionnel (tous les jours à 9h UTC = 5h heure de Québec EDT)
+- Email de rappel envoyé avec succès via Brevo à tous les utilisateurs
 - **Auth OTP** — connexion et création de compte par code à 8 chiffres (remplace magic link) — compatible tous navigateurs et iOS Safari
 - **Rate limit** — countdown 60s sur le bouton d'envoi, erreurs traduites en français
 - **Templates email Supabase** — code OTP 8 chiffres avec `user-select:all` (Magic Link + Confirm signup), `{{ .Token }}`
 - **Rappel par email** — 5 options disponibles (voir détail ci-dessous)
 - **Cron corrigé** — logique roulante ancrée sur `purchase_date`, scan de toutes les garanties actives
+- **Cron logs d'erreur** — erreurs Brevo loguées avec status + body, compteur `errors` = tentatives échouées seulement
 - **Page d'accueil** — landing page publique sur `/` avec présentation de l'app et bouton de connexion
 - **Supabase Redirect URL configurée** — `https://zen-garantie.vercel.app/auth/callback` dans le dashboard (Authentication → URL Configuration)
 - **Upload photo corrigé** — deux boutons distincts (caméra + galerie), compression réduite à 800px, erreurs Supabase Storage affichées
 - **Photo obligatoire** — champ photo requis à la création d'une garantie (astérisque rouge, bouton désactivé sans photo)
 - **Message d'erreur mémoire** — si la compression échoue (manque de RAM sur l'appareil), message amber détaillé avec solutions affiché 30 secondes
 - **Brevo SMTP configuré** — emails auth envoyés via Brevo (smtp-relay.brevo.com:587), plus de limite 2 emails/heure de Supabase
+- **Rappels cron migrés vers Brevo** — `src/app/api/cron/route.ts` utilise l'API transactionnelle Brevo au lieu de Resend — envoie à n'importe quelle adresse email
 - **Édition garantie corrigée** — bouton "Enregistrer" actif si photo déjà existante (plus besoin de re-sélectionner une photo en mode édition)
-
-### ⚠️ Limitation connue — Resend sans domaine custom
-Resend en mode gratuit sans domaine vérifié ne peut envoyer **qu'à l'email du compte Resend** (`davidblouin03@gmail.com`).
-Le compte ZenGarantie utilise `davidblouin.5@hotmail.com` → les rappels automatiques n'arriveront pas à cette adresse.
-
-**Solutions :**
-- **Option A (rapide)** : Vérifier `davidblouin.5@hotmail.com` dans Resend → resend.com → Settings → Emails
-- **Option B (complète)** : Ajouter un domaine custom sur Resend → envoie à tous les utilisateurs
+- **PWA install prompt** — bottom sheet à la première visite (Android : bouton natif / iOS : instructions Share) + option permanente dans Paramètres → Application
+- **Icônes PWA générées dynamiquement** — route `/api/pwa-icon/[size]` via `ImageResponse`, manifest mis à jour (plus besoin de fichiers PNG manuels)
+- **Audit sécurité complété** — aucune clé secrète dans git, CRON_SECRET renforcé (64 chars hex aléatoires), double vérification auth cron (`x-vercel-cron` + Bearer), security headers HTTP ajoutés
 
 ### 🔧 Reste à faire (optionnel)
-- **Ajouter les icônes PWA** — générer sur pwabuilder.com et placer dans `public/icons/`
-- **Vérifier email Hotmail sur Resend** — pour recevoir les rappels sur le bon compte
+- Rien — application complète
 
 ---
 
 ## Décisions prises
 - **Auth :** OTP 8 chiffres uniquement (pas de mot de passe, pas de magic link) — compatible tous navigateurs incluant Safari iOS
 - **Email auth (OTP) :** Brevo SMTP (`smtp-relay.brevo.com:587`) — 300 emails/jour gratuits, pas de limite Supabase
-- **Email rappels (cron) :** Resend (`onboarding@resend.dev`) — 3000 emails/mois gratuits
+- **Email rappels (cron) :** Brevo API transactionnelle (`api.brevo.com/v3/smtp/email`) — 300 emails/jour gratuits, envoie à tous les utilisateurs
 - **Utilisateurs :** Multi-utilisateurs avec RLS Supabase
 - **Nom :** ZenGarantie
 
@@ -54,7 +49,7 @@ Le compte ZenGarantie utilise `davidblouin.5@hotmail.com` → les rappels automa
 - **Stockage images :** Supabase Storage (1GB) — compression client-side avant upload
 - **Hébergement :** Vercel (tier gratuit)
 - **Emails auth :** Brevo (SMTP custom Supabase) — login Supabase : `a805df001@smtp-brevo.com`
-- **Emails rappels :** Resend (3000 emails/mois gratuits)
+- **Emails rappels :** Brevo API transactionnelle (300 emails/jour gratuits)
 
 ## Structure des fichiers
 
@@ -63,17 +58,16 @@ warranty-keep/
 ├── .env.local                     # Jamais commité — À CRÉER
 ├── .env.example                   # Modèle avec les clés vides
 ├── .gitignore
-├── next.config.ts                 # Header Service-Worker-Allowed
+├── next.config.ts                 # Headers SW + security headers HTTP (X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy)
 ├── tailwind.config.ts             # darkMode: 'media', tokens sémantiques
 ├── tsconfig.json                  # target ES2017 ajouté automatiquement
-├── vercel.json                    # Cron job : 0 9 1 * * (1er du mois, 9h UTC)
+├── vercel.json                    # Cron job : 0 9 * * * (tous les jours, 9h UTC)
 ├── package.json
 ├── start-dev.bat                  # Script de lancement local (contournement PATH)
 │
 ├── public/
-│   ├── icons/                     # À CRÉER : icon-192, 512, maskable-192, maskable-512
 │   ├── sw.js                      # Service worker (network-first, prod uniquement)
-│   └── favicon.ico                # À AJOUTER
+│   └── favicon.ico                # À AJOUTER (optionnel)
 │
 ├── emails/
 │   └── warranty-reminder.tsx      # Template React Email en français
@@ -94,8 +88,8 @@ warranty-keep/
     ├── types/
     │   └── warranty.ts            # interface Warranty, WarrantyStatus
     └── app/
-        ├── layout.tsx             # Root layout, metadata PWA, <SWRegister>
-        ├── manifest.ts            # PWA manifest (display: standalone)
+        ├── layout.tsx             # Root layout, metadata PWA, <SWRegister>, capture beforeinstallprompt globale
+        ├── manifest.ts            # PWA manifest (display: standalone) — icônes via /api/pwa-icon/[size]
         ├── globals.css            # Tailwind + classe .input + pb-safe
         ├── page.tsx               # Landing page publique — forwarde ?code/?token_hash vers /auth/callback, redirige si déjà connecté
         ├── not-found.tsx
@@ -112,20 +106,26 @@ warranty-keep/
         │   │       ├── page.tsx   # Détail complet + Server Action suppression
         │   │       └── edit/page.tsx
         │   ├── add/page.tsx
-        │   └── settings/page.tsx  # Déconnexion + info rappels
+        │   └── settings/page.tsx  # Déconnexion + info rappels + bouton install PWA
         ├── api/
-        │   └── cron/route.ts      # Job mensuel : scan + envoi Resend
+        │   ├── cron/route.ts      # Cron quotidien : scan + envoi Brevo API
+        │   └── pwa-icon/[size]/route.tsx  # Icônes PWA générées dynamiquement (ImageResponse, edge runtime)
         └── components/
             ├── ui/
-            │   ├── bottom-nav.tsx      # 3 tabs, fixed bottom, safe-area-inset
-            │   ├── warranty-card.tsx   # Carte avec bordure colorée + badge lieu
-            │   └── expiry-badge.tsx    # Pill coloré selon statut
+            │   ├── bottom-nav.tsx          # 3 tabs, fixed bottom, safe-area-inset
+            │   ├── warranty-card.tsx       # Carte avec bordure colorée + badge lieu
+            │   ├── expiry-badge.tsx        # Pill coloré selon statut
+            │   ├── install-sheet.tsx       # Bottom sheet PWA install (1ère visite) — Android + iOS
+            │   └── install-settings-row.tsx  # Ligne install dans Paramètres (permanente)
             ├── forms/
             │   ├── warranty-form.tsx   # Formulaire add/edit partagé
             │   └── image-upload.tsx    # Camera/file + compression + preview
             └── providers/
-                ├── sw-register.tsx        # Enregistre SW en production uniquement
-                └── auth-hash-handler.tsx  # Détecte #access_token= (hash fragment) et redirige vers /warranties
+                ├── sw-register.tsx          # Enregistre SW en production uniquement
+                ├── auth-hash-handler.tsx    # Détecte #access_token= (hash fragment) et redirige vers /warranties
+                └── pwa-install-provider.tsx # Injecte <InstallSheet> dans le layout app
+    └── hooks/
+        └── use-pwa-install.ts  # Détection Android/iOS, beforeinstallprompt, localStorage dismissed
 ```
 
 ---
@@ -137,7 +137,6 @@ warranty-keep/
 | App en production | https://zen-garantie.vercel.app |
 | Repo GitHub | https://github.com/davidb-wq/zen-garantie |
 | Supabase projet | https://djsntrzximssohhluwti.supabase.co |
-| Resend compte | davidblouin03@gmail.com |
 | Brevo compte | davidblouin03@gmail.com |
 | Brevo SMTP login | a805df001@smtp-brevo.com |
 
@@ -158,13 +157,6 @@ git add -p          # Sélectionner les fichiers à commiter
 git commit -m "description du changement"
 git push            # Vercel redéploie automatiquement
 ```
-
-## Ajouter les icônes PWA (optionnel)
-Générer les icônes sur **pwabuilder.com** et les placer dans `public/icons/` :
-- `icon-192x192.png`
-- `icon-512x512.png`
-- `icon-maskable-192x192.png`
-- `icon-maskable-512x512.png`
 
 ---
 
@@ -223,7 +215,7 @@ create policy "Users can delete their own images"
 2. **Service Worker** — enregistré uniquement en production (`NODE_ENV === 'production'`)
 3. **Path Storage** = `{user_id}/{warranty_id}.webp` — requis pour les policies RLS
 4. **`SUPABASE_SERVICE_ROLE_KEY`** — jamais exposé côté client, seulement dans le cron
-5. **Cron Vercel Hobby** — max 1x/jour → `0 9 1 * *` (1er du mois) est valide
+5. **Cron Vercel Hobby** — max 1x/jour → `0 9 * * *` (tous les jours à 9h UTC)
 6. **`reminder_interval`** — stocké par garantie (pas globalement), 5 valeurs acceptées :
    - `1` — Chaque mois (roulant depuis la date d'achat)
    - `3` — Chaque 3 mois (roulant depuis la date d'achat)
@@ -239,6 +231,8 @@ create policy "Users can delete their own images"
 11. **Supabase Redirect URL** — `https://zen-garantie.vercel.app/auth/callback` dans Authentication → URL Configuration → Redirect URLs
 12. **Upload photo** — deux inputs séparés : `capture="environment"` (caméra) et sans capture (galerie). `maxWidthOrHeight: 800` pour réduire la mémoire canvas. Limite 20 Mo avant compression. Photo obligatoire à la création.
 13. **Erreur mémoire compression** — catch retourne le code `'MEMORY_ERROR'`, affiche un message amber 30s avec solutions (fermer apps, utiliser galerie). Erreur Supabase Storage affichée à l'utilisateur si upload échoue.
+14. **PWA install prompt** — `beforeinstallprompt` capturé dans un script inline dans `<body>` (avant hydration React) → stocké dans `window.__pwaInstallPrompt`. Le hook `use-pwa-install.ts` le lit au `useEffect`. Dismissal persisté dans `localStorage` clé `pwa-install-dismissed`. La sheet (1ère visite) respecte ce flag ; la ligne Paramètres l'ignore (toujours accessible).
+15. **Icônes PWA** — générées dynamiquement via `ImageResponse` à `/api/pwa-icon/[size]` (edge runtime). Manifest pointe vers ces routes. Plus besoin de fichiers PNG statiques dans `public/icons/`.
 
 ## Design
 
@@ -251,6 +245,8 @@ create policy "Users can delete their own images"
 
 ## Tester le cron manuellement
 
+Remplace `TON_CRON_SECRET` par la valeur de `CRON_SECRET` dans `.env.local` :
+
 ```bash
 node -e "
 const https = require('https');
@@ -258,7 +254,7 @@ const options = {
   hostname: 'zen-garantie.vercel.app',
   path: '/api/cron',
   method: 'GET',
-  headers: { 'Authorization': 'Bearer warranty-keep-cron-secret-2026' }
+  headers: { 'Authorization': 'Bearer TON_CRON_SECRET' }
 };
 const req = https.request(options, (res) => {
   let body = '';
@@ -270,6 +266,10 @@ req.end();
 "
 ```
 
-Réponse attendue : `{"sent": N, "total": N}` — `sent` = nombre d'emails envoyés.
+Réponse attendue : `{"sent": N, "attempted": N, "total": N, "errors": N}`
+- `sent` = emails envoyés avec succès
+- `attempted` = utilisateurs avec un rappel dû aujourd'hui
+- `total` = garanties actives non expirées
+- `errors` = tentatives d'envoi échouées (Brevo)
 
-Le cron s'exécute automatiquement le **1er de chaque mois à 9h UTC** via Vercel.
+Le cron s'exécute automatiquement **tous les jours à 9h UTC = 5h du matin heure de Québec (EDT)** via Vercel.
