@@ -5,6 +5,17 @@ import { createClient } from '@/lib/supabase/client'
 import { ArrowRight, Loader2, KeyRound } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
+function MicrosoftIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
+      <path fill="#F25022" d="M1 1h10.5v10.5H1z" />
+      <path fill="#00A4EF" d="M1 12.5h10.5V23H1z" />
+      <path fill="#7FBA00" d="M12.5 1H23v10.5H12.5z" />
+      <path fill="#FFB900" d="M12.5 12.5H23V23H12.5z" />
+    </svg>
+  )
+}
+
 function GoogleIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
@@ -96,7 +107,7 @@ function LoginForm() {
     }
   }, [sent])
 
-  async function handleOAuthSignIn(provider: 'google' | 'facebook') {
+  async function handleOAuthSignIn(provider: 'google' | 'azure') {
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider,
@@ -237,7 +248,7 @@ function LoginForm() {
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Connexion</h2>
 
       {/* OAuth buttons */}
-      <div className="mb-6">
+      <div className="space-y-3 mb-6">
         <button
           type="button"
           onClick={() => handleOAuthSignIn('google')}
@@ -245,6 +256,14 @@ function LoginForm() {
         >
           <GoogleIcon />
           Continuer avec Google
+        </button>
+        <button
+          type="button"
+          onClick={() => handleOAuthSignIn('azure')}
+          className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+        >
+          <MicrosoftIcon />
+          Continuer avec Microsoft
         </button>
       </div>
 
