@@ -1,6 +1,6 @@
 # ZenGarantie — Guide de développement
 
-## État du projet (mis à jour le 2026-04-17 — Rappels email corrigés)
+## État du projet (mis à jour le 2026-04-17 — OAuth Google + Microsoft ajoutés)
 
 ### ✅ Complété — Application 100% opérationnelle
 - Tout le code source écrit
@@ -13,6 +13,7 @@
 - Cron quotidien testé et fonctionnel (tous les jours à 9h UTC = 5h heure de Québec EDT)
 - Email de rappel envoyé avec succès via Brevo à tous les utilisateurs
 - **Auth OTP** — connexion et création de compte par code à 8 chiffres (remplace magic link) — compatible tous navigateurs et iOS Safari
+- **Auth OAuth** — boutons "Continuer avec Google" et "Continuer avec Microsoft" sur la page login, flux PKCE via `/auth/callback`
 - **Rate limit** — countdown 60s sur le bouton d'envoi, erreurs traduites en français
 - **Templates email Supabase** — code OTP 8 chiffres avec `user-select:all` (Magic Link + Confirm signup), `{{ .Token }}`
 - **Rappel par email** — 5 options disponibles (voir détail ci-dessous)
@@ -29,6 +30,7 @@
 - **PWA install prompt** — bottom sheet à la première visite (Android : bouton natif / iOS : instructions Share) + option permanente dans Paramètres → Application
 - **Icônes PWA générées dynamiquement** — route `/api/pwa-icon/[size]` via `ImageResponse`, manifest mis à jour (plus besoin de fichiers PNG manuels)
 - **Audit sécurité complété** — aucune clé secrète dans git, CRON_SECRET renforcé (64 chars hex aléatoires), double vérification auth cron (`x-vercel-cron` + Bearer), security headers HTTP ajoutés
+- **Wording email rappel neutralisé** — sujet : `Rappel de garantie — "X"` (plus de "expire bientôt") ; corps : "Voici un rappel pour la garantie suivante :" — cohérent avec les rappels roulants (chaque mois/3 mois/an) et les rappels ponctuels avant expiration
 
 ### 🔧 Reste à faire (optionnel)
 - Rien — application complète
@@ -36,7 +38,7 @@
 ---
 
 ## Décisions prises
-- **Auth :** OTP 8 chiffres uniquement (pas de mot de passe, pas de magic link) — compatible tous navigateurs incluant Safari iOS
+- **Auth :** OTP 8 chiffres + OAuth Google + OAuth Microsoft (Azure) — compatible tous navigateurs incluant Safari iOS
 - **Email auth (OTP) :** Brevo SMTP (`smtp-relay.brevo.com:587`) — 300 emails/jour gratuits, pas de limite Supabase
 - **Email rappels (cron) :** Brevo API transactionnelle (`api.brevo.com/v3/smtp/email`) — 300 emails/jour gratuits, envoie à tous les utilisateurs
 - **Utilisateurs :** Multi-utilisateurs avec RLS Supabase
@@ -95,7 +97,7 @@ warranty-keep/
         ├── not-found.tsx
         ├── (auth)/
         │   ├── layout.tsx         # Layout centré (pas de bottom nav)
-        │   ├── login/page.tsx     # Flux OTP 2 étapes : email → code 8 chiffres → verifyOtp → /warranties
+        │   ├── login/page.tsx     # Boutons OAuth (Google, Microsoft) + flux OTP 2 étapes : email → code 8 chiffres → verifyOtp → /warranties
         │   └── auth/callback/route.ts  # Gère code (PKCE) ET token_hash (confirm signup)
         ├── (app)/
         │   ├── layout.tsx         # Auth guard (getUser) + BottomNav
@@ -225,7 +227,8 @@ create policy "Users can delete their own images"
    - Valeurs négatives = rappels ponctuels avant expiration; positives = rappels roulants ancrés sur `purchase_date`
    - Champ obligatoire, pas de défaut
 7. **Auth OTP** — `signInWithOtp({ email })` sans `emailRedirectTo` → Supabase envoie un code 8 chiffres. Vérification : `verifyOtp({ email, token, type: 'email' })`. Fonctionne sur tous les navigateurs (pas de PKCE, pas de redirect).
-8. **Auth callback** — toujours en place pour le flux `?token_hash=&type=` (confirm signup legacy) et `?code=` (PKCE si jamais utilisé)
+8. **Auth OAuth** — `signInWithOAuth({ provider, options: { redirectTo: origin + '/auth/callback' } })`. Providers actifs : `google`, `azure` (Microsoft/Outlook/Hotmail/Live). Secrets gérés dans Supabase dashboard (Authentication → Providers), jamais dans le code. Flux PKCE — le callback `/auth/callback` échange le `?code=` via `exchangeCodeForSession()`.
+9. **Auth callback** — gère `?code=` (PKCE OAuth), `?token_hash=&type=` (confirm signup legacy). Erreur → redirect `/login?error=auth_failed`.
 9. **Templates email Supabase** — configurés dans le dashboard (Auth > Email Templates), variable `{{ .Token }}` pour le code OTP, `user-select:all` pour faciliter la copie. Sources dans `supabase/email-templates/`. OTP expiry = 3600s (1 heure).
 10. **Brevo SMTP** — Supabase → Authentication → Sign In / Providers → SMTP Settings. Host: `smtp-relay.brevo.com`, Port: `587`, Username: `a805df001@smtp-brevo.com`. Sender: `davidblouin03@gmail.com` / `ZenGarantie`. Remplace le serveur email intégré de Supabase (limité à 2/h).
 11. **Supabase Redirect URL** — `https://zen-garantie.vercel.app/auth/callback` dans Authentication → URL Configuration → Redirect URLs
