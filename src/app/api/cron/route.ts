@@ -56,6 +56,7 @@ export async function GET(request: Request) {
   )
 
   let sent = 0
+  let attempted = 0
 
   for (const [userId, userWarranties] of Object.entries(byUser)) {
     // Filter: apply reminder logic based on interval type
@@ -83,6 +84,8 @@ export async function GET(request: Request) {
     })
 
     if (!relevant.length) continue
+
+    attempted++
 
     // Get user email via admin API
     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId)
@@ -135,5 +138,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return Response.json({ sent, total: warranties.length, errors: Object.keys(byUser).length - sent })
+  return Response.json({ sent, attempted, total: warranties.length, errors: attempted - sent })
 }
