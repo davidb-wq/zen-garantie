@@ -4,7 +4,7 @@ import { getWarrantyStatus, STATUS_BORDER } from '@/lib/warranty-utils'
 import { ExpiryBadge } from './expiry-badge'
 import type { Warranty } from '@/types/warranty'
 
-export function WarrantyCard({ warranty }: { warranty: Warranty }) {
+export function WarrantyCard({ warranty, signedImageUrl }: { warranty: Warranty; signedImageUrl?: string | null }) {
   const status = getWarrantyStatus(warranty)
 
   return (
@@ -18,9 +18,9 @@ export function WarrantyCard({ warranty }: { warranty: Warranty }) {
             <h3 className="font-semibold text-slate-900 dark:text-white text-sm leading-tight line-clamp-2">
               {warranty.title}
             </h3>
-            {warranty.image_url && (
+            {signedImageUrl && (
               <img
-                src={warranty.image_url}
+                src={signedImageUrl}
                 alt="Facture"
                 className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
               />

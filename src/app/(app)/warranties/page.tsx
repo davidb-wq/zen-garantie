@@ -25,6 +25,24 @@ export default async function WarrantiesPage() {
 
   const sorted = sortWarranties((warranties as Warranty[]) ?? [])
 
+  const warrantiesWithImages = sorted.filter((w) => w.image_url)
+  const storagePaths = warrantiesWithImages.map((w) =>
+    w.image_url!.includes('/warranty-images/')
+      ? w.image_url!.split('/warranty-images/')[1]
+      : w.image_url!
+  )
+  const signedUrlMap = new Map<string, string>()
+  if (storagePaths.length > 0) {
+    const { data: signedData } = await supabase.storage
+      .from('warranty-images')
+      .createSignedUrls(storagePaths, 3600)
+    signedData?.forEach((item, index) => {
+      if (item.signedUrl) {
+        signedUrlMap.set(warrantiesWithImages[index].id, item.signedUrl)
+      }
+    })
+  }
+
   return (
     <div className="px-4 pt-6 pb-4">
       <div className="flex items-center justify-between mb-6">
@@ -65,7 +83,7 @@ export default async function WarrantiesPage() {
       ) : (
         <div className="space-y-3">
           {sorted.map((warranty) => (
-            <WarrantyCard key={warranty.id} warranty={warranty} />
+            <WarrantyCard key={warranty.id} warranty={warranty} signedImageUrl={signedUrlMap.get(warranty.id) ?? null} />
           ))}
         </div>
       )}
