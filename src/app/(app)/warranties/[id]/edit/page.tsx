@@ -22,6 +22,18 @@ export default async function EditWarrantyPage({
 
   const w = warranty as Warranty
 
+  // Génère une signed URL valable 1h pour la prévisualisation dans le formulaire
+  let signedImageUrl: string | null = null
+  if (w.image_url) {
+    const storagePath = w.image_url.includes('/warranty-images/')
+      ? w.image_url.split('/warranty-images/')[1]
+      : w.image_url
+    const { data } = await supabase.storage
+      .from('warranty-images')
+      .createSignedUrl(storagePath, 3600)
+    signedImageUrl = data?.signedUrl ?? null
+  }
+
   return (
     <div className="px-4 pt-6 pb-4">
       <div className="flex items-center gap-3 mb-6">
@@ -38,6 +50,7 @@ export default async function EditWarrantyPage({
         defaultValues={w}
         warrantyId={w.id}
         userId={w.user_id}
+        existingImageUrl={signedImageUrl}
       />
     </div>
   )

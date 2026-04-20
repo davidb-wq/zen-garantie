@@ -12,9 +12,10 @@ interface WarrantyFormProps {
   defaultValues?: Partial<Warranty>
   warrantyId?: string
   userId?: string
+  existingImageUrl?: string | null
 }
 
-export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyFormProps) {
+export function WarrantyForm({ defaultValues, warrantyId, userId, existingImageUrl }: WarrantyFormProps) {
   const router = useRouter()
   const isEdit = !!warrantyId
 
@@ -97,13 +98,9 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
           return
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('warranty-images')
-          .getPublicUrl(path)
-
         await supabase
           .from('warranties')
-          .update({ image_url: publicUrl })
+          .update({ image_url: path })
           .eq('id', currentId)
       }
 
@@ -220,7 +217,7 @@ export function WarrantyForm({ defaultValues, warrantyId, userId }: WarrantyForm
         <ImageUpload
           value={imageFile}
           onChange={setImageFile}
-          existingUrl={defaultValues?.image_url}
+          existingUrl={existingImageUrl ?? undefined}
         />
       </div>
 

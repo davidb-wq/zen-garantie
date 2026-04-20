@@ -30,6 +30,19 @@ export default async function WarrantyDetailPage({
   if (!warranty) notFound()
 
   const w = warranty as Warranty
+
+  // Génère une signed URL valable 1h pour afficher la photo en privé
+  let signedImageUrl: string | null = null
+  if (w.image_url) {
+    const storagePath = w.image_url.includes('/warranty-images/')
+      ? w.image_url.split('/warranty-images/')[1]
+      : w.image_url
+    const { data } = await supabase.storage
+      .from('warranty-images')
+      .createSignedUrl(storagePath, 3600)
+    signedImageUrl = data?.signedUrl ?? null
+  }
+
   const durationLabel =
     warrantyDurationOptions().find((o) => o.months === w.warranty_months)?.label ??
     `${w.warranty_months} mois`
@@ -60,10 +73,10 @@ export default async function WarrantyDetailPage({
         <ExpiryBadge warranty={w} />
       </div>
 
-      {w.image_url && (
+      {signedImageUrl && (
         <div className="mb-6">
           <img
-            src={w.image_url}
+            src={signedImageUrl}
             alt="Facture"
             className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 object-contain max-h-64"
           />
