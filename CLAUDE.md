@@ -1,6 +1,6 @@
 # ZenGarantie — Guide de développement
 
-## État du projet (mis à jour le 2026-04-20 — Conformité Loi 25 complète)
+## État du projet (mis à jour le 2026-04-23)
 
 ### ✅ Complété — Application 100% opérationnelle
 - Tout le code source écrit
@@ -32,8 +32,11 @@
 - **Audit sécurité complété** — aucune clé secrète dans git, CRON_SECRET renforcé (64 chars hex aléatoires), double vérification auth cron (`x-vercel-cron` + Bearer), security headers HTTP ajoutés
 - **Wording email rappel neutralisé** — sujet : `Rappel de garantie — "X"` (plus de "expire bientôt") ; corps : "Voici un rappel pour la garantie suivante :" — cohérent avec les rappels roulants (chaque mois/3 mois/an) et les rappels ponctuels avant expiration
 - **Conformité Loi 25 Québec** — politique de confidentialité publique à `/confidentialite`, avis sur la page de connexion, section Confidentialité dans Paramètres (export JSON, suppression de compte)
-- **Photos privées (signed URLs)** — bucket `warranty-images` privé, accès via signed URLs valables 1h générées côté serveur. `image_url` en base = chemin relatif (`{user_id}/{warranty_id}.webp`), rétrocompatible avec les anciennes URLs complètes
+- **Photos privées (signed URLs)** — bucket `warranty-images` privé, accès via signed URLs valables 1h générées côté serveur. `image_url` en base = chemin relatif (`{user_id}/{warranty_id}.webp`), rétrocompatible avec les anciennes URLs complètes. La **liste** utilise `createSignedUrls` (batch, 1 appel) ; le **détail** et l'**édition** utilisent `createSignedUrl` individuel — corrigé 2026-04-27
 - **Notification changement de politique** — bannière fixe au-dessus de la BottomNav si `user.user_metadata.policy_version_accepted !== CURRENT_POLICY_VERSION`. Disparaît après clic "J'ai compris" (met à jour les métadonnées Supabase). Mettre à jour `src/lib/policy-version.ts` pour déclencher la bannière chez tous les utilisateurs
+- **Recadrage photo** — après sélection d'une photo, `ImageCropModal` s'ouvre en plein écran (z-index 9999). Zone de sélection initialisée automatiquement à 96% de l'image. Bouton "Confirmer" en bas + "Tout sélectionner" pour réinitialiser. Extraction canvas → compression avant upload.
+- **Visionneuse photo plein écran** — `ImageLightbox` sur la page détail : miniature cliquable avec icône loupe, overlay noir plein écran, zoom natif mobile (`touchAction: pinch-zoom`), fermeture par Escape ou clic backdrop.
+- **Fix upload photo en mode édition** — Supabase Storage n'a pas de policy UPDATE → `upsert: true` échouait. Remplacé par DELETE + INSERT : suppression de l'ancienne photo avant upload de la nouvelle. Sécurisé par les policies INSERT et DELETE existantes.
 
 ### 🔧 Reste à faire (optionnel)
 - Aucun — conformité Loi 25 complète ✅
@@ -50,6 +53,7 @@
 ## Stack technologique
 - **Framework :** Next.js (App Router, TypeScript) — version actuelle installée
 - **Styles :** Tailwind CSS + Lucide-React
+- **Recadrage photo :** react-image-crop (^11.x) — modal client-side, extraction canvas WebP
 - **Auth & BDD :** Supabase (tier gratuit)
 - **Stockage images :** Supabase Storage (1GB) — compression client-side avant upload
 - **Hébergement :** Vercel (tier gratuit)
@@ -127,10 +131,12 @@ warranty-keep/
             │   ├── install-sheet.tsx       # Bottom sheet PWA install (1ère visite) — Android + iOS
             │   ├── install-settings-row.tsx  # Ligne install dans Paramètres (permanente)
             │   ├── delete-account-button.tsx  # Bouton suppression compte — confirmation 2 étapes, nettoie Storage + BDD + auth
-            │   └── policy-banner.tsx       # Bannière Loi 25 — s'affiche si version politique non acceptée, disparaît après clic "J'ai compris"
+            │   ├── policy-banner.tsx       # Bannière Loi 25 — s'affiche si version politique non acceptée, disparaît après clic "J'ai compris"
+            │   ├── image-crop-modal.tsx    # Modal recadrage plein écran (z-9999, react-image-crop) — zone auto-init 96%, canvas → WebP
+            │   └── image-lightbox.tsx      # Visionneuse photo plein écran — miniature cliquable, pinch-zoom natif, Escape pour fermer
             ├── forms/
-            │   ├── warranty-form.tsx   # Formulaire add/edit partagé
-            │   └── image-upload.tsx    # Camera/file + compression + preview
+            │   ├── warranty-form.tsx   # Formulaire add/edit partagé — upload photo : DELETE+INSERT (pas upsert, pas de policy UPDATE Storage)
+            │   └── image-upload.tsx    # Camera/file → ImageCropModal → compression → preview
             └── providers/
                 ├── sw-register.tsx          # Enregistre SW en production uniquement
                 ├── auth-hash-handler.tsx    # Détecte #access_token= (hash fragment) et redirige vers /warranties
@@ -246,6 +252,9 @@ create policy "Users can delete their own images"
 13. **Erreur mémoire compression** — catch retourne le code `'MEMORY_ERROR'`, affiche un message amber 30s avec solutions (fermer apps, utiliser galerie). Erreur Supabase Storage affichée à l'utilisateur si upload échoue.
 14. **PWA install prompt** — `beforeinstallprompt` capturé dans un script inline dans `<body>` (avant hydration React) → stocké dans `window.__pwaInstallPrompt`. Le hook `use-pwa-install.ts` le lit au `useEffect`. Dismissal persisté dans `localStorage` clé `pwa-install-dismissed`. La sheet (1ère visite) respecte ce flag ; la ligne Paramètres l'ignore (toujours accessible).
 15. **Icônes PWA** — générées dynamiquement via `ImageResponse` à `/api/pwa-icon/[size]` (edge runtime). Manifest pointe vers ces routes. Plus besoin de fichiers PNG statiques dans `public/icons/`.
+16. **Upload photo édition** — Supabase Storage n'a pas de policy UPDATE → `upsert: true` provoque "row-level security policy" error. Solution : `remove([path])` silencieux puis `upload(..., { upsert: false })`. Le DELETE ignore l'erreur si le fichier n'existe pas.
+17. **Modals plein écran** — utiliser `z-[9999]` (pas `z-50`) pour couvrir la bottom nav (`z-50` insuffisant). Voir `image-crop-modal.tsx` et `image-lightbox.tsx`.
+18. **Recadrage photo** — flux : sélection fichier → `ImageCropModal` (plein écran) → canvas extraction → `compressWarrantyImage()` → preview. La page détail utilise `<ImageLightbox>` au lieu d'un `<img>` statique.
 
 ## Design
 
