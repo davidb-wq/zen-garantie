@@ -1,6 +1,6 @@
 # ZenGarantie — Guide de développement
 
-## État du projet (mis à jour le 2026-04-23)
+## État du projet (mis à jour le 2026-04-23 — scanner code-barres)
 
 ### ✅ Complété — Application 100% opérationnelle
 - Tout le code source écrit
@@ -37,6 +37,8 @@
 - **Recadrage photo** — après sélection d'une photo, `ImageCropModal` s'ouvre en plein écran (z-index 9999). Zone de sélection initialisée automatiquement à 96% de l'image. Bouton "Confirmer" en bas + "Tout sélectionner" pour réinitialiser. Extraction canvas → compression avant upload.
 - **Visionneuse photo plein écran** — `ImageLightbox` sur la page détail : miniature cliquable avec icône loupe, overlay noir plein écran, zoom natif mobile (`touchAction: pinch-zoom`), fermeture par Escape ou clic backdrop.
 - **Fix upload photo en mode édition** — Supabase Storage n'a pas de policy UPDATE → `upsert: true` échouait. Remplacé par DELETE + INSERT : suppression de l'ancienne photo avant upload de la nouvelle. Sécurisé par les policies INSERT et DELETE existantes.
+- **Scanner code-barres** — bouton dans le dashboard (`/warranties`), ouvre la caméra via `@zxing/browser`, identifie le produit via UPCitemdb + fallback Open Food Facts, affiche nom/marque/modèle + analyse garantie probable/peu probable/inconnue en français. Limite 3 scans/jour par appareil (localStorage). `davidblouin03@gmail.com` a des scans illimités.
+- **Politique mise à jour (2026-04-23)** — scanner ajouté à la Loi 25 (code-barres non conservé, localStorage compteur, UPCitemdb + Open Food Facts comme sous-traitants)
 
 ### 🔧 Reste à faire (optionnel)
 - Aucun — conformité Loi 25 complète ✅
@@ -49,11 +51,13 @@
 - **Email rappels (cron) :** Brevo API transactionnelle (`api.brevo.com/v3/smtp/email`) — 300 emails/jour gratuits, envoie à tous les utilisateurs
 - **Utilisateurs :** Multi-utilisateurs avec RLS Supabase
 - **Nom :** ZenGarantie
+- **Scanner code-barres :** `@zxing/browser` (UPC-A, EAN-13, EAN-8) — import dynamique dans `useEffect` pour éviter crash SSR. API produit : UPCitemdb (gratuit, 100 req/jour) + fallback Open Food Facts. Réponses cachées 24h par Vercel CDN. Limite 3 scans/jour en localStorage (clé `scan-usage`). Compte `davidblouin03@gmail.com` exempté.
 
 ## Stack technologique
 - **Framework :** Next.js (App Router, TypeScript) — version actuelle installée
 - **Styles :** Tailwind CSS + Lucide-React
 - **Recadrage photo :** react-image-crop (^11.x) — modal client-side, extraction canvas WebP
+- **Scanner code-barres :** @zxing/browser (^0.1.x) — `decodeFromConstraints` avec `facingMode: environment`
 - **Auth & BDD :** Supabase (tier gratuit)
 - **Stockage images :** Supabase Storage (1GB) — compression client-side avant upload
 - **Hébergement :** Vercel (tier gratuit)
@@ -96,7 +100,8 @@ warranty-keep/
     │   ├── policy-version.ts      # CURRENT_POLICY_VERSION — changer pour déclencher la bannière chez tous
     │   └── warranty-utils.ts      # getExpiryDate, getWarrantyStatus, STATUS_STYLES
     ├── types/
-    │   └── warranty.ts            # interface Warranty, WarrantyStatus
+    │   ├── warranty.ts            # interface Warranty, WarrantyStatus
+    │   └── barcode.ts             # interface BarcodeResult, type WarrantyLikelihood
     └── app/
         ├── layout.tsx             # Root layout, metadata PWA, <SWRegister>, capture beforeinstallprompt globale
         ├── manifest.ts            # PWA manifest (display: standalone) — icônes via /api/pwa-icon/[size]
@@ -122,12 +127,14 @@ warranty-keep/
         ├── api/
         │   ├── cron/route.ts      # Cron quotidien : scan + envoi Brevo API
         │   ├── export/route.ts    # GET — téléchargement des garanties en JSON (droit à la portabilité, Loi 25)
+        │   ├── barcode/[upc]/route.ts  # GET — proxy UPCitemdb + fallback Open Food Facts, auth requise, cache 24h
         │   └── pwa-icon/[size]/route.tsx  # Icônes PWA générées dynamiquement (ImageResponse, edge runtime)
         └── components/
             ├── ui/
             │   ├── bottom-nav.tsx          # 3 tabs, fixed bottom, safe-area-inset
             │   ├── warranty-card.tsx       # Carte avec bordure colorée + badge lieu
             │   ├── expiry-badge.tsx        # Pill coloré selon statut
+            │   ├── dashboard-scanner.tsx   # Bouton scan + modal + résultat — intégré dans /warranties
             │   ├── install-sheet.tsx       # Bottom sheet PWA install (1ère visite) — Android + iOS
             │   ├── install-settings-row.tsx  # Ligne install dans Paramètres (permanente)
             │   ├── delete-account-button.tsx  # Bouton suppression compte — confirmation 2 étapes, nettoie Storage + BDD + auth
@@ -136,7 +143,9 @@ warranty-keep/
             │   └── image-lightbox.tsx      # Visionneuse photo plein écran — miniature cliquable, pinch-zoom natif, Escape pour fermer
             ├── forms/
             │   ├── warranty-form.tsx   # Formulaire add/edit partagé — upload photo : DELETE+INSERT (pas upsert, pas de policy UPDATE Storage)
-            │   └── image-upload.tsx    # Camera/file → ImageCropModal → compression → preview
+            │   ├── image-upload.tsx    # Camera/file → ImageCropModal → compression → preview
+            │   ├── barcode-scanner-modal.tsx  # Modal plein écran (z-9999) — caméra @zxing/browser, facingMode environment, guard hasScanned ref
+            │   └── product-result-card.tsx    # Carte résultat scan — nom/marque/modèle + bloc garantie coloré + disclaimer magasin
             └── providers/
                 ├── sw-register.tsx          # Enregistre SW en production uniquement
                 ├── auth-hash-handler.tsx    # Détecte #access_token= (hash fragment) et redirige vers /warranties
@@ -255,6 +264,10 @@ create policy "Users can delete their own images"
 16. **Upload photo édition** — Supabase Storage n'a pas de policy UPDATE → `upsert: true` provoque "row-level security policy" error. Solution : `remove([path])` silencieux puis `upload(..., { upsert: false })`. Le DELETE ignore l'erreur si le fichier n'existe pas.
 17. **Modals plein écran** — utiliser `z-[9999]` (pas `z-50`) pour couvrir la bottom nav (`z-50` insuffisant). Voir `image-crop-modal.tsx` et `image-lightbox.tsx`.
 18. **Recadrage photo** — flux : sélection fichier → `ImageCropModal` (plein écran) → canvas extraction → `compressWarrantyImage()` → preview. La page détail utilise `<ImageLightbox>` au lieu d'un `<img>` statique.
+19. **Scanner code-barres (@zxing/browser)** — toujours importer dynamiquement dans `useEffect` (`await import('@zxing/browser')`) — le module accède à `navigator` à l'import et crashe le SSR Next.js si importé statiquement. Utiliser `decodeFromConstraints` (pas `decodeFromVideoDevice`) pour iOS Safari.
+20. **Limite scans** — clé localStorage `scan-usage` = `{ date: 'YYYY-MM-DD', count: number }`. Réinitialisée automatiquement si la date change. Compte `davidblouin03@gmail.com` exempté (vérifié côté client via `supabase.auth.getUser()`).
+21. **Détection garantie** — heuristique par mots-clés (titre + catégorie) ET par marque (Stanley, Samsung, Dyson, etc.) dans `src/app/api/barcode/[upc]/route.ts`. Retourne `warrantyLikelihood: 'probable' | 'peu_probable' | 'inconnue'` + `warrantyMessage` en français. Ajouter des marques/mots-clés dans ce fichier si la détection est incorrecte.
+22. **Cache UPCitemdb** — réponses cachées 24h par Vercel CDN (`Cache-Control: public, max-age=86400`). Si un produit retourne un mauvais résultat, il faut attendre 24h ou changer le code de l'API pour forcer un `revalidate: 0` temporairement.
 
 ## Design
 
@@ -290,6 +303,12 @@ Ordre d'opération critique :
 
 ### Middleware — aucun changement nécessaire
 `/confidentialite` n'est ni dans `isAppRoute` ni dans les redirects `/login`/`/`, donc passe sans redirection pour tous les utilisateurs.
+
+### Mise à jour 2026-04-23 — Scanner code-barres
+- Code-barres scanné : transmis à UPCitemdb/Open Food Facts uniquement, non conservé
+- Compteur scans : localStorage uniquement, non transmis
+- Nouveaux sous-traitants : UPCitemdb (États-Unis), Open Food Facts (France)
+- `CURRENT_POLICY_VERSION` passé à `'2026-04-23'` → bannière affichée aux utilisateurs existants
 
 ---
 
