@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Camera, X, Loader2, ImageIcon, AlertTriangle } from 'lucide-react'
 import { compressWarrantyImage } from '@/lib/image-compression'
+import { ImageCropModal } from '@/app/components/ui/image-crop-modal'
 
 interface ImageUploadProps {
   value: File | null
@@ -14,6 +15,8 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
   const [compressing, setCompressing] = useState(false)
   const [preview, setPreview] = useState<string | null>(existingUrl ?? null)
   const [compressionError, setCompressionError] = useState<string | null>(null)
+  const [rawFile, setRawFile] = useState<File | null>(null)
+  const [showCropModal, setShowCropModal] = useState(false)
   const cameraRef = useRef<HTMLInputElement>(null)
   const galleryRef = useRef<HTMLInputElement>(null)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -40,19 +43,30 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
       return
     }
 
+    e.target.value = ''
+    setRawFile(file)
+    setShowCropModal(true)
+  }
+
+  async function handleCropConfirm(croppedFile: File) {
+    setShowCropModal(false)
+    setRawFile(null)
     setCompressing(true)
     try {
-      const compressed = await compressWarrantyImage(file)
-      const objectUrl = URL.createObjectURL(compressed)
-      setPreview(objectUrl)
+      const compressed = await compressWarrantyImage(croppedFile)
+      setPreview(URL.createObjectURL(compressed))
       onChange(compressed)
     } catch {
       setCompressionError('MEMORY_ERROR')
       onChange(null)
-      e.target.value = ''
     } finally {
       setCompressing(false)
     }
+  }
+
+  function handleCropCancel() {
+    setShowCropModal(false)
+    setRawFile(null)
   }
 
   function handleRemove() {
@@ -62,6 +76,16 @@ export function ImageUpload({ value, onChange, existingUrl }: ImageUploadProps) 
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
     if (cameraRef.current) cameraRef.current.value = ''
     if (galleryRef.current) galleryRef.current.value = ''
+  }
+
+  if (showCropModal && rawFile) {
+    return (
+      <ImageCropModal
+        file={rawFile}
+        onConfirm={handleCropConfirm}
+        onCancel={handleCropCancel}
+      />
+    )
   }
 
   if (preview) {

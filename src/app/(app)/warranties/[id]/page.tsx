@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Calendar, Clock, Pencil, Trash2, FileText } from 'lucide-react'
 import { ExpiryBadge } from '@/app/components/ui/expiry-badge'
+import { ImageLightbox } from '@/app/components/ui/image-lightbox'
 import { formatExpiryDate, warrantyDurationOptions } from '@/lib/warranty-utils'
 import type { Warranty } from '@/types/warranty'
 
@@ -75,11 +76,7 @@ export default async function WarrantyDetailPage({
 
       {signedImageUrl && (
         <div className="mb-6">
-          <img
-            src={signedImageUrl}
-            alt="Facture"
-            className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 object-contain max-h-64"
-          />
+          <ImageLightbox src={signedImageUrl} alt="Facture" />
         </div>
       )}
 
