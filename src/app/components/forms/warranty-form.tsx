@@ -88,9 +88,13 @@ export function WarrantyForm({ defaultValues, warrantyId, userId, existingImageU
       // Upload image if provided
       if (imageFile && currentId && currentUserId) {
         const path = `${currentUserId}/${currentId}.webp`
+        // Supprimer l'ancienne photo avant d'uploader (évite le besoin d'une policy UPDATE sur storage)
+        if (isEdit) {
+          await supabase.storage.from('warranty-images').remove([path])
+        }
         const { error: uploadError } = await supabase.storage
           .from('warranty-images')
-          .upload(path, imageFile, { upsert: true })
+          .upload(path, imageFile, { upsert: false })
 
         if (uploadError) {
           setError('La garantie a été sauvegardée, mais la photo n\'a pas pu être uploadée : ' + uploadError.message)
