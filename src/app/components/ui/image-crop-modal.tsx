@@ -73,7 +73,7 @@ export function ImageCropModal({ file, onConfirm, onCancel }: ImageCropModalProp
   }, [completedCrop, file, onConfirm])
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-12 shrink-0">
         <button
