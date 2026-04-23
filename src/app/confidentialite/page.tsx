@@ -55,7 +55,7 @@ export default function PolitiqueConfidentialitePage() {
             Politique de confidentialité
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-            En vigueur depuis le 20 avril 2026
+            En vigueur depuis le 20 avril 2026 · Mise à jour le 23 avril 2026
           </p>
         </div>
 
@@ -85,6 +85,8 @@ export default function PolitiqueConfidentialitePage() {
             ['Adresse email', 'Authentification et envoi des rappels de garantie par courriel'],
             ['Garanties (titre, date, durée, emplacement, notes)', 'Gestion personnelle de vos garanties'],
             ['Photos de factures ou preuves d\'achat', 'Archivage numérique de vos preuves d\'achat'],
+            ['Code-barres scanné (UPC/EAN)', 'Transmis à UPCitemdb et Open Food Facts pour identifier le produit — non conservé sur nos serveurs'],
+            ['Compteur de scans quotidiens', 'Stocké localement sur votre appareil (localStorage) uniquement, jamais transmis'],
             ['Témoins de session (cookies Supabase)', 'Maintien de votre session de connexion (durée : 1 an)'],
           ]} />
           <p className="mt-3">
@@ -117,6 +119,8 @@ export default function PolitiqueConfidentialitePage() {
             ['Supabase (supabase.com)', 'Base de données, authentification et stockage des photos — États-Unis / Union européenne'],
             ['Brevo (brevo.com)', 'Envoi des courriels d\'authentification et des rappels — France / Union européenne'],
             ['Vercel (vercel.com)', 'Hébergement de l\'application et exécution des tâches planifiées — États-Unis / Union européenne'],
+            ['UPCitemdb (upcitemdb.com)', 'Identification de produits par code-barres (UPC/EAN) lors du scan — États-Unis. Seul le code-barres est transmis, aucune donnée personnelle.'],
+            ['Open Food Facts (openfoodfacts.org)', 'Identification de produits alimentaires par code-barres — France. Seul le code-barres est transmis, aucune donnée personnelle.'],
           ]} />
           <p className="mt-3">
             Ces fournisseurs agissent exclusivement selon nos instructions et sont soumis à leurs
@@ -179,7 +183,7 @@ export default function PolitiqueConfidentialitePage() {
         </Section>
 
         {/* 8. Cookies */}
-        <Section title="8. Témoins de connexion (cookies)">
+        <Section title="8. Témoins de connexion (cookies) et stockage local">
           <p>
             ZenGarantie utilise uniquement des <strong className="text-slate-800 dark:text-slate-200">témoins fonctionnels</strong> nécessaires
             à l&apos;authentification (cookies de session Supabase, durée maximale : 1 an).
@@ -188,6 +192,11 @@ export default function PolitiqueConfidentialitePage() {
             Nous n&apos;utilisons <strong className="text-slate-800 dark:text-slate-200">aucun</strong> cookie publicitaire, analytique
             ou de traçage tiers. Ces témoins fonctionnels sont indispensables au service ; les
             refuser empêche l&apos;accès à l&apos;application.
+          </p>
+          <p>
+            La fonctionnalité de scanner de code-barres utilise le <strong className="text-slate-800 dark:text-slate-200">stockage local de votre navigateur</strong> (localStorage)
+            pour enregistrer le compteur de scans quotidiens. Cette information reste exclusivement
+            sur votre appareil et n&apos;est jamais transmise à nos serveurs.
           </p>
         </Section>
 

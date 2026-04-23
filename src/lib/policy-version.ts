@@ -1,1 +1,1 @@
-export const CURRENT_POLICY_VERSION = '2026-04-20'
+export const CURRENT_POLICY_VERSION = '2026-04-23'
