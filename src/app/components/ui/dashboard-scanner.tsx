@@ -74,11 +74,11 @@ export function DashboardScanner() {
       </button>
 
       {remaining > 0 ? (
-        <p className="mt-1.5 text-center text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
           {remaining}/{MAX_SCANS} scan{remaining > 1 ? 's' : ''} restant{remaining > 1 ? 's' : ''} aujourd&apos;hui
         </p>
       ) : (
-        <p className="mt-1.5 text-center text-xs text-amber-600 dark:text-amber-400">
+        <p className="mt-3 text-center text-xs text-amber-600 dark:text-amber-400">
           Limite quotidienne atteinte — revenez demain
         </p>
       )}

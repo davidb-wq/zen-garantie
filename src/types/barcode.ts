@@ -1,7 +1,10 @@
+export type WarrantyLikelihood = 'probable' | 'peu_probable' | 'inconnue'
+
 export interface BarcodeResult {
   found: boolean
   name?: string
   brand?: string
   model?: string
-  description?: string
+  warrantyLikelihood?: WarrantyLikelihood
+  warrantyMessage?: string
 }
