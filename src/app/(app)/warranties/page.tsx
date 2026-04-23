@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Plus, ShieldOff } from 'lucide-react'
 import { WarrantyCard } from '@/app/components/ui/warranty-card'
+import { DashboardScanner } from '@/app/components/ui/dashboard-scanner'
 import { getWarrantyStatus } from '@/lib/warranty-utils'
 import type { Warranty, WarrantyStatus } from '@/types/warranty'
 
@@ -60,6 +61,8 @@ export default async function WarrantiesPage() {
           Ajouter
         </Link>
       </div>
+
+      <DashboardScanner />
 
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
