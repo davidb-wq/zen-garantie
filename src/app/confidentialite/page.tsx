@@ -85,9 +85,9 @@ export default function PolitiqueConfidentialitePage() {
             ['Adresse email', 'Authentification et envoi des rappels de garantie par courriel'],
             ['Garanties (titre, date, durée, emplacement, notes)', 'Gestion personnelle de vos garanties'],
             ['Photos de factures ou preuves d\'achat', 'Archivage numérique de vos preuves d\'achat'],
-            ['Code-barres scanné (UPC/EAN)', 'Transmis à UPCitemdb et Open Food Facts pour identifier le produit — non conservé sur nos serveurs'],
+            ['Code-barres scanné (UPC/EAN)', 'Transmis à un service tiers d\'identification de produits pour identifier le produit — non conservé sur nos serveurs'],
             ['Compteur de scans quotidiens', 'Stocké localement sur votre appareil (localStorage) uniquement, jamais transmis'],
-            ['Témoins de session (cookies Supabase)', 'Maintien de votre session de connexion (durée : 1 an)'],
+            ['Témoins de session (cookies)', 'Maintien de votre session de connexion (durée : 1 an)'],
           ]} />
           <p className="mt-3">
             Nous ne collectons aucune donnée à des fins publicitaires, analytiques ou de profilage.
@@ -110,22 +110,27 @@ export default function PolitiqueConfidentialitePage() {
         </Section>
 
         {/* 4. Tiers */}
-        <Section title="4. Tiers et sous-traitants">
+        <Section title="4. Sous-traitants et tiers">
           <p>
-            Vos données sont traitées par les sous-traitants suivants, dans le seul but de vous
-            fournir le service :
+            Pour vous fournir le service, vos renseignements sont traités par des sous-traitants
+            agissant exclusivement selon nos instructions. Ces fournisseurs assurent les fonctions
+            suivantes :
           </p>
           <Table rows={[
-            ['Supabase (supabase.com)', 'Base de données, authentification et stockage des photos — États-Unis / Union européenne'],
-            ['Brevo (brevo.com)', 'Envoi des courriels d\'authentification et des rappels — France / Union européenne'],
-            ['Vercel (vercel.com)', 'Hébergement de l\'application et exécution des tâches planifiées — États-Unis / Union européenne'],
-            ['UPCitemdb (upcitemdb.com)', 'Identification de produits par code-barres (UPC/EAN) lors du scan — États-Unis. Seul le code-barres est transmis, aucune donnée personnelle.'],
-            ['Open Food Facts (openfoodfacts.org)', 'Identification de produits alimentaires par code-barres — France. Seul le code-barres est transmis, aucune donnée personnelle.'],
+            ['Hébergement de la base de données, authentification et stockage des photos', 'Localisation : États-Unis et/ou Union européenne'],
+            ['Envoi des courriels d\'authentification et des rappels de garantie', 'Localisation : Union européenne'],
+            ['Hébergement de l\'application et exécution des tâches planifiées', 'Localisation : États-Unis et/ou Union européenne'],
+            ['Identification de produits par code-barres lors du scan', 'Seul le code-barres est transmis — aucune donnée personnelle. Localisation : États-Unis et/ou France'],
           ]} />
           <p className="mt-3">
-            Ces fournisseurs agissent exclusivement selon nos instructions et sont soumis à leurs
-            propres politiques de confidentialité. Aucune donnée n&apos;est vendue ni partagée à des tiers
-            à des fins commerciales.
+            Aucune donnée personnelle n&apos;est vendue ni partagée à des tiers à des fins commerciales
+            ou publicitaires. Pour obtenir la liste nominative des sous-traitants, contactez-nous à{' '}
+            <a
+              href="mailto:davidblouin03@gmail.com"
+              className="text-slate-900 dark:text-white font-medium underline hover:opacity-70 transition-opacity"
+            >
+              davidblouin03@gmail.com
+            </a>.
           </p>
         </Section>
 
@@ -137,13 +142,13 @@ export default function PolitiqueConfidentialitePage() {
           <p>
             Si vous supprimez votre compte, toutes vos données (adresse email, garanties,
             photos) sont <strong className="text-slate-800 dark:text-slate-200">supprimées immédiatement et définitivement</strong> de
-            nos systèmes. Les copies de sauvegarde automatiques conservées par Supabase peuvent
+            nos systèmes. Des copies de sauvegarde automatiques conservées par nos sous-traitants peuvent
             subsister jusqu&apos;à 30 jours conformément à leurs politiques internes.
           </p>
         </Section>
 
-        {/* 6. Droits */}
-        <Section title="6. Vos droits (Loi 25)">
+        {/* 5. Droits */}
+        <Section title="5. Vos droits (Loi 25)">
           <p>
             En vertu de la Loi 25, vous disposez des droits suivants concernant vos renseignements personnels :
           </p>
@@ -163,8 +168,8 @@ export default function PolitiqueConfidentialitePage() {
           </div>
         </Section>
 
-        {/* 7. Exercer ses droits */}
-        <Section title="7. Comment exercer vos droits">
+        {/* 6. Exercer ses droits */}
+        <Section title="6. Comment exercer vos droits">
           <p>
             Les droits de rectification, de suppression et de portabilité sont accessibles directement
             depuis la section <strong className="text-slate-800 dark:text-slate-200">Paramètres</strong> de l&apos;application.
@@ -182,11 +187,11 @@ export default function PolitiqueConfidentialitePage() {
           </p>
         </Section>
 
-        {/* 8. Cookies */}
-        <Section title="8. Témoins de connexion (cookies) et stockage local">
+        {/* 7. Cookies */}
+        <Section title="7. Témoins de connexion (cookies) et stockage local">
           <p>
             ZenGarantie utilise uniquement des <strong className="text-slate-800 dark:text-slate-200">témoins fonctionnels</strong> nécessaires
-            à l&apos;authentification (cookies de session Supabase, durée maximale : 1 an).
+            à l&apos;authentification (cookies de session, durée maximale : 1 an).
           </p>
           <p>
             Nous n&apos;utilisons <strong className="text-slate-800 dark:text-slate-200">aucun</strong> cookie publicitaire, analytique
@@ -200,8 +205,8 @@ export default function PolitiqueConfidentialitePage() {
           </p>
         </Section>
 
-        {/* 9. Sécurité */}
-        <Section title="9. Sécurité des données">
+        {/* 8. Sécurité */}
+        <Section title="8. Sécurité des données">
           <p>
             Vos données sont protégées par les mesures suivantes :
           </p>
@@ -214,8 +219,8 @@ export default function PolitiqueConfidentialitePage() {
           </ul>
         </Section>
 
-        {/* 10. Modifications */}
-        <Section title="10. Modifications à cette politique">
+        {/* 9. Modifications */}
+        <Section title="9. Modifications à cette politique">
           <p>
             En cas de modification importante à cette politique, un avis vous sera présenté lors
             de votre prochaine connexion. La date de dernière mise à jour est indiquée en haut
